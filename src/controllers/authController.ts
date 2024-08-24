@@ -49,37 +49,54 @@ export const signup = async (
     console.log("Signup request received:", req.body);
     res
       .status(201)
-      .json({ success: true, message: "User signed up successfully" });
+      .json({ success: true, message: "User signed up successfully", token });
   } catch (error) {
     logger.error("Signup failed: Internal server error");
     next(error);
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const { email, password } = req.body;
 
-  console.log("Login request received:", { email, password }); // Debugging log
-
-  const user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    console.warn("Login failed: User not found"); // Debugging log
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid email or password" });
+  if (!email || !password) {
+    logger.warn("Login failed: Missing required fields");
+    return next(new ErrorResponse("Email and password are required", 400));
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  try {
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      logger.warn("Login failed: Invalid email or password");
+      return next(new ErrorResponse("Invalid email or password", 401));
+    }
 
-  if (!isPasswordValid) {
-    console.warn("Login failed: Incorrect password"); // Debugging log
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid email or password" });
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      logger.warn("Login failed: Invalid email or password");
+      return next(new ErrorResponse("Invalid email or password", 401));
+    }
+
+    // Generate JWT
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
+      expiresIn: "1h",
+    });
+
+    console.log("Login request received:", req.body);
+    res.json({
+      success: true,
+      message: "User logged in successfully",
+      user,
+      token,
+    });
+  } catch (error) {
+    logger.error("Login failed: Internal server error");
+    next(error);
   }
-
-  res
-    .status(200)
-    .json({ success: true, message: "User logged in successfully" });
 };
