@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../index";
 import { PrismaClient } from "@prisma/client";
 
@@ -74,6 +75,7 @@ describe("Auth API", () => {
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.message).toBe("User logged in successfully");
+    expect(response.body.token).toBeDefined(); // Check if token is present in the response
   });
 
   it("should fail to log in a user with an invalid email", async () => {
@@ -96,5 +98,49 @@ describe("Auth API", () => {
     expect(response.status).toBe(401);
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe("Invalid email or password"); // Update to match the actual error message
+  });
+});
+
+describe("Me Controller", () => {
+  it("should return logged in user information", async () => {
+    const user = await prisma.user.findUnique({
+      where: { email: "john.doe@example.com" },
+    });
+    const token = jwt.sign(
+      { userId: user!.id.toString() },
+      process.env.JWT_SECRET!,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    const response = await request(app)
+      .get("/api/auth/me") // Ensure this matches your route definition
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.message).toBe("Logged in user information");
+    expect(response.body.data).toMatchObject({
+      id: user!.id,
+      name: user!.name,
+      email: user!.email,
+    });
+  });
+
+  it("should return 401 if no token is provided", async () => {
+    const response = await request(app).get("/api/auth/me"); // Ensure this matches your route definition
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toBe("Unauthorized: No token provided");
+  });
+
+  it("should return 401 if token is invalid", async () => {
+    const response = await request(app)
+      .get("/api/auth/me") // Ensure this matches your route definition
+      .set("Authorization", "Bearer invalidtoken");
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toBe("Unauthorized: Invalid token");
   });
 });

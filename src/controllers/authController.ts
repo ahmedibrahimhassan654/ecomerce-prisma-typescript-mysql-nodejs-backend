@@ -7,6 +7,10 @@ import ErrorResponse from "../exceptions/ErrorResponse";
 import logger from "../utils/logger";
 const prisma = new PrismaClient();
 
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
+
 export const signup = async (
   req: Request,
   res: Response,
@@ -97,6 +101,23 @@ export const login = async (
     });
   } catch (error) {
     logger.error("Login failed: Internal server error");
+    next(error);
+  }
+};
+
+export const me = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.json({
+      success: true,
+      message: "Logged in user information",
+      data: req.user,
+    });
+  } catch (error) {
+    logger.error("Fetching user information failed: Internal server error");
     next(error);
   }
 };
