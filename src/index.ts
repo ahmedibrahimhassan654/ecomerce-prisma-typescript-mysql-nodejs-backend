@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import express, { Express, query, Request, Response } from "express";
+import express, { Express, Request, Response } from "express";
 import bodyParser from "body-parser";
 
 import { PORT } from "./secrets";
@@ -22,6 +22,11 @@ app.get("/", async (req: Request, res: Response) => {
 app.use("/api", rootRouter);
 // Use the error handler middleware
 app.use(errorHandler);
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+export default app; // Ensure this is a default export

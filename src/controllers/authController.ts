@@ -46,50 +46,40 @@ export const signup = async (
       expiresIn: "1h",
     });
 
-    logger.info("User created successfully");
-    res.status(201).json({ message: "User created successfully", token });
+    console.log("Signup request received:", req.body);
+    res
+      .status(201)
+      .json({ success: true, message: "User signed up successfully" });
   } catch (error) {
     logger.error("Signup failed: Internal server error");
     next(error);
   }
 };
 
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    logger.warn("Login failed: Missing required fields");
-    return next(new ErrorResponse("Email and password are required", 400));
+  console.log("Login request received:", { email, password }); // Debugging log
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    console.warn("Login failed: User not found"); // Debugging log
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid email or password" });
   }
 
-  try {
-    // Find user by email
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      logger.warn("Login failed: Invalid email or password");
-      return next(new ErrorResponse("Invalid email or password", 401));
-    }
+  const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    // Compare passwords
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      logger.warn("Login failed: Invalid email or password");
-      return next(new ErrorResponse("Invalid email or password", 401));
-    }
-
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    logger.info("Login successful");
-    res.status(200).json({ message: "Login successful", token });
-  } catch (error) {
-    logger.error("Login failed: Internal server error");
-    next(error);
+  if (!isPasswordValid) {
+    console.warn("Login failed: Incorrect password"); // Debugging log
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid email or password" });
   }
+
+  res
+    .status(200)
+    .json({ success: true, message: "User logged in successfully" });
 };
