@@ -15,6 +15,7 @@ beforeAll(async () => {
       name: "John Doe",
       email: "john.doe@example.com",
       password: hashedPassword, // Store hashed password
+      role: "USER",
     },
   });
 });
@@ -32,6 +33,7 @@ describe("Auth API", () => {
         name: "Jane Doe",
         email: `jane.doe${Date.now()}@example.com`, // Use unique email
         password: "password123",
+        role: "ADMIN",
       });
 
     expect(response.status).toBe(201);
@@ -125,6 +127,7 @@ describe("Me Controller", () => {
       id: user!.id,
       name: user!.name,
       email: user!.email,
+      role: user!.role, // Check the role field
     });
   });
 

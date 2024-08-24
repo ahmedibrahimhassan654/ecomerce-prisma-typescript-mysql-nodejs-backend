@@ -16,7 +16,7 @@ export const signup = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   if (!name || !email || !password) {
     logger.warn("Signup failed: Missing required fields");
@@ -42,6 +42,7 @@ export const signup = async (
         name,
         email,
         password: hashedPassword,
+        role: role || "USER",
       },
     });
 
