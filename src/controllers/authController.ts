@@ -1,25 +1,32 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import { JWT_SECRET } from "../secrets";
+import ErrorResponse from "../exceptions/ErrorResponse";
+import logger from "../utils/logger";
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
-export const signup = async (req: Request, res: Response) => {
+export const signup = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const { name, email, password } = req.body;
 
-  //adding validations
   if (!name || !email || !password) {
-    return res
-      .status(400)
-      .json({ error: "Name, email, and password are required" });
+    logger.warn("Signup failed: Missing required fields");
+    return next(
+      new ErrorResponse("Name, email, and password are required", 400)
+    );
   }
+
   try {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
+      logger.warn("Signup failed: User already exists");
+      return next(new ErrorResponse("User already exists", 400));
     }
 
     // Hash the password
@@ -39,11 +46,50 @@ export const signup = async (req: Request, res: Response) => {
       expiresIn: "1h",
     });
 
-    res
-      .status(201)
-      .json({ message: "User created successfully", token, newUser });
+    logger.info("User created successfully");
+    res.status(201).json({ message: "User created successfully", token });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    logger.error("Signup failed: Internal server error");
+    next(error);
+  }
+};
+
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    logger.warn("Login failed: Missing required fields");
+    return next(new ErrorResponse("Email and password are required", 400));
+  }
+
+  try {
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      logger.warn("Login failed: Invalid email or password");
+      return next(new ErrorResponse("Invalid email or password", 401));
+    }
+
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      logger.warn("Login failed: Invalid email or password");
+      return next(new ErrorResponse("Invalid email or password", 401));
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    logger.info("Login successful");
+    res.status(200).json({ message: "Login successful", token });
+  } catch (error) {
+    logger.error("Login failed: Internal server error");
+    next(error);
   }
 };
