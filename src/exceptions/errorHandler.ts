@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import ErrorResponse from "./ErrorResponse";
 import logger from "../utils/logger";
+import { ZodError } from "zod";
 
 const errorHandler = (
   err: any,
@@ -13,7 +14,15 @@ const errorHandler = (
 
   // Log to console for dev
   logger.error(`${err.message} - ${req.method} ${req.originalUrl} - ${req.ip}`);
-
+if (err instanceof ZodError) {
+  return res.status(400).json({
+    success: false,
+    message: err.errors[0].message,
+    statusCode: 400,
+    errorCode: "VALIDATION_ERROR",
+    error: err.errors,
+  });
+}
   // Handle MySQL specific errors
   if (err.code === "ER_DUP_ENTRY") {
     const message = "Duplicate field value entered";
