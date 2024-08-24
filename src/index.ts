@@ -1,17 +1,18 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "./utils/prismaClient";
 import express, { Express, Request, Response } from "express";
+
 import bodyParser from "body-parser";
 
-import { PORT } from "./secrets";
+import { config } from "./secrets";
 import rootRouter from "./routes";
 import requestLogger from "./middelwares/requestLogger";
 import errorHandler from "./exceptions/errorHandler";
 
 const app: Express = express();
-const prisma = new PrismaClient({
-  log: ["query"],
-});
-
+// Log the current environment, database URL, and port
+console.log(`Environment: ${config.environment}`);
+console.log(`Database URL: ${config.databaseUrl}`);
+console.log(`Port: ${config.port}`);
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 app.use(requestLogger);
@@ -23,10 +24,15 @@ app.use("/api", rootRouter);
 // Use the error handler middleware
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+const server = app.listen(config.port, () => {
+  console.log(`Server is running on port ${config.port}`);
+});
 
-export default app; // Ensure this is a default export
+process.on("SIGTERM", async () => {
+  await prisma.$disconnect();
+  server.close(() => {
+    console.log("Process terminated");
+  });
+});
+
+export { app, server }; // Ensure this is a default export

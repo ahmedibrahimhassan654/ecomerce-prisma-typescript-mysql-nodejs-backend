@@ -1,28 +1,53 @@
+import dotenv from "dotenv";
+dotenv.config({ path: `.env.test` });
+import prisma from "../utils/prismaClient";
 import bcrypt from "bcrypt";
 import request from "supertest";
 import jwt from "jsonwebtoken";
-import app from "../index";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { app, server } from "../index";
+import { execSync } from "child_process";
 
 beforeAll(async () => {
-  await prisma.$connect();
-  // Create a user for login test with hashed password
-  const hashedPassword = await bcrypt.hash("password123", 10);
-  await prisma.user.create({
-    data: {
-      name: "John Doe",
-      email: "john.doe@example.com",
-      password: hashedPassword, // Store hashed password
-      role: "USER",
-    },
-  });
-});
+  try {
+    console.log("Running migrations...");
+    execSync("npm run migrate:test", { stdio: "inherit" });
+    console.log("Migrations completed successfully.");
+
+    console.log("Connecting to the database...");
+    await prisma.$connect();
+    console.log("Database connected successfully.");
+
+    console.log("Creating test user...");
+    const hashedPassword = await bcrypt.hash("password123", 10);
+    await prisma.user.create({
+      data: {
+        name: "John Doe",
+        email: "john.doe@example.com",
+        password: hashedPassword,
+        role: "USER",
+      },
+    });
+    console.log("Test user created successfully.");
+  } catch (error) {
+    console.error("Error during setup:", error);
+    throw error;
+  }
+}, 30000); // Increase timeout to 30 seconds
 
 afterAll(async () => {
-  await prisma.user.deleteMany(); // Clean up the database
+  console.log("Cleaning up the database...");
+  await prisma.user.deleteMany();
   await prisma.$disconnect();
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => {
+      if (err) return reject(err);
+      console.log("Server closed");
+      resolve();
+    });
+  });
+});
+afterEach(() => {
+  jest.clearAllTimers();
 });
 
 describe("Auth API", () => {

@@ -5,8 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "cross-env NODE_ENV=test jest",
+    "migrate:test": "ts-node src/migrate.ts",
     "start": "npx nodemon",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "cross-env NODE_ENV=development ts-node prisma/seed.ts",
+    "start:dev": "cross-env NODE_ENV=development nodemon --exec ts-node src/index.ts",
+    "start:test": "cross-env NODE_ENV=test ts-node src/index.ts",
+    "build": "tsc",
+    "start:prod": "cross-env NODE_ENV=production node dist/index.js"
   },
   "keywords": [],
   "author": "",
