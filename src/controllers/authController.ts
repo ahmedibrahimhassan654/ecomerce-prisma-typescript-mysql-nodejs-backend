@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+// import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../secrets";
 import ErrorResponse from "../exceptions/ErrorResponse";
 import logger from "../utils/logger";
-const prisma = new PrismaClient();
+import prisma from "../utils/prismaClient";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -112,10 +112,15 @@ export const me = async (
   next: NextFunction
 ) => {
   try {
+    const existingUser = await prisma.user.findFirst({
+      where: { id: req.user.id },
+    });
+
     res.json({
       success: true,
       message: "Logged in user information",
       data: req.user,
+      user: existingUser,
     });
   } catch (error) {
     logger.error("Fetching user information failed: Internal server error");
