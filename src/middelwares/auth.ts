@@ -29,5 +29,3 @@ export const authenticate = (
     return next(new ErrorResponse("Invalid token", 401));
   }
 };
-
-
