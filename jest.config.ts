@@ -19,6 +19,7 @@ const config: Config.InitialOptions = {
   collectCoverage: true,
   coverageDirectory: "<rootDir>/coverage",
   coverageProvider: "v8",
+  verbose: true,
 };
 
 export default config;

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest",
+    "test": "cross-env NODE_ENV=test jest --verbose",
     "prisma:generate": "dotenv -e .env.development -- npx prisma generate",
     "prisma:migrate:dev": "dotenv -e .env.development -- npx prisma migrate dev --name init",
     "prisma:migrate:test": "dotenv -e .env.test -- npx prisma migrate dev --name init",
