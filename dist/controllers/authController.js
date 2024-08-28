@@ -13,13 +13,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.me = exports.login = exports.signup = void 0;
-const client_1 = require("@prisma/client");
+// import { PrismaClient } from "@prisma/client";
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const secrets_1 = require("../secrets");
 const ErrorResponse_1 = __importDefault(require("../exceptions/ErrorResponse"));
 const logger_1 = __importDefault(require("../utils/logger"));
-const prisma = new client_1.PrismaClient();
+const prismaClient_1 = __importDefault(require("../utils/prismaClient"));
 const signup = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
@@ -28,7 +28,7 @@ const signup = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     }
     try {
         // Check if user already exists
-        const existingUser = yield prisma.user.findUnique({ where: { email } });
+        const existingUser = yield prismaClient_1.default.user.findUnique({ where: { email } });
         if (existingUser) {
             logger_1.default.warn("Signup failed: User already exists");
             return next(new ErrorResponse_1.default("User already exists", 400));
@@ -36,7 +36,7 @@ const signup = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         // Hash the password
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
         // Create new user
-        const newUser = yield prisma.user.create({
+        const newUser = yield prismaClient_1.default.user.create({
             data: {
                 name,
                 email,
@@ -67,7 +67,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     }
     try {
         // Find user by email
-        const user = yield prisma.user.findUnique({ where: { email } });
+        const user = yield prismaClient_1.default.user.findUnique({ where: { email } });
         if (!user) {
             logger_1.default.warn("Login failed: Invalid email or password");
             return next(new ErrorResponse_1.default("Invalid email or password", 401));
@@ -98,10 +98,14 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
 exports.login = login;
 const me = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const existingUser = yield prismaClient_1.default.user.findFirst({
+            where: { id: req.user.id },
+        });
         res.json({
             success: true,
             message: "Logged in user information",
             data: req.user,
+            user: existingUser,
         });
     }
     catch (error) {

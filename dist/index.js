@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.server = exports.app = void 0;
 const prismaClient_1 = __importDefault(require("./utils/prismaClient"));
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
@@ -20,6 +21,7 @@ const routes_1 = __importDefault(require("./routes"));
 const requestLogger_1 = __importDefault(require("./middelwares/requestLogger"));
 const errorHandler_1 = __importDefault(require("./exceptions/errorHandler"));
 const app = (0, express_1.default)();
+exports.app = app;
 // Log the current environment, database URL, and port
 console.log(`Environment: ${secrets_1.config.environment}`);
 console.log(`Database URL: ${secrets_1.config.databaseUrl}`);
@@ -36,10 +38,10 @@ app.use(errorHandler_1.default);
 const server = app.listen(secrets_1.config.port, () => {
     console.log(`Server is running on port ${secrets_1.config.port}`);
 });
+exports.server = server;
 process.on("SIGTERM", () => __awaiter(void 0, void 0, void 0, function* () {
     yield prismaClient_1.default.$disconnect();
     server.close(() => {
         console.log("Process terminated");
     });
 }));
-exports.default = app; // Ensure this is a default export

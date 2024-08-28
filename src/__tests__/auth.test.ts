@@ -4,50 +4,46 @@ import prisma from "../utils/prismaClient";
 import bcrypt from "bcrypt";
 import request from "supertest";
 import jwt from "jsonwebtoken";
-import { app, server } from "../index";
+import { app } from "../index";
 import { execSync } from "child_process";
 
 beforeAll(async () => {
-  try {
-    console.log("Running migrations...");
-    const output = execSync("npm run prisma:migrate:test", {
-      stdio: "pipe",
-    }).toString();
-    console.log("Migration output:", output);
-    console.log("Migrations completed successfully.");
+  console.log("Running migrations...");
+  const output = execSync("npm run prisma:migrate:test", {
+    stdio: "pipe",
+  }).toString();
+  console.log("Migration output:", output);
+  console.log("Migrations completed successfully.");
 
-    console.log("Connecting to the database...");
-    await prisma.$connect();
-    console.log("Database connected successfully.");
+  console.log("Connecting to the database...");
+  await prisma.$connect();
+  console.log("Database connected successfully.");
 
-    console.log("Creating test user...");
-    const hashedPassword = await bcrypt.hash("password123", 10);
-    await prisma.user.create({
-      data: {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        password: hashedPassword,
-        role: "USER",
-      },
-    });
-    console.log("Test user created successfully.");
-  } catch (error) {
-    console.error("Error during setup:", error);
-    throw error;
-  }
-}, 30000); // Increase timeout to 30 seconds
+  console.log("Creating test user...");
+  const hashedPassword = await bcrypt.hash("password123", 10);
+  await prisma.user.create({
+    data: {
+      name: "John Doe",
+      email: "john.doe@example.com",
+      password: hashedPassword,
+      role: "USER",
+    },
+  });
+  console.log("Test user created successfully.");
+}, 30000);
 
 afterAll(async () => {
   console.log("Cleaning up the database...");
   await prisma.user.deleteMany();
   await prisma.$disconnect();
-  await new Promise<void>((resolve, reject) => {
-    server.close((err) => {
-      if (err) return reject(err);
-      console.log("Server closed");
-      resolve();
-    });
-  });
+
+  // // Wrap server.close in a Promise to ensure Jest waits for it
+  // await new Promise<void>((resolve) => {
+  //   server.close(() => {
+  //     console.log("Server closed");
+  //     resolve();
+  //   });
+  // });
 });
 
 afterEach(() => {

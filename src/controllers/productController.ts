@@ -2,9 +2,12 @@ import { NextFunction, Request, Response } from "express";
 import prisma from "../utils/prismaClient";
 import logger from "../utils/logger";
 import ErrorResponse from "../exceptions/ErrorResponse";
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
 
 export const createProduct = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -20,7 +23,7 @@ export const createProduct = async (
       data: { name, description, price, tags },
     });
 
-    res.status(201).json({ success: true, data: product });
+    res.status(201).json({ success: true, data: product, createdBy: req.user });
   } catch (error) {
     logger.error("Create product failed: Internal server error");
     next(error);
@@ -30,7 +33,9 @@ export const createProduct = async (
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany();
-    res.status(201).json({ success: true, data: products });
+    res
+      .status(200)
+      .json({ success: true, lenght: products.length, data: products });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch products" });
   }
@@ -43,7 +48,7 @@ export const getProductById = async (req: Request, res: Response) => {
       where: { id: Number(id) },
     });
     if (product) {
-      res.status(201).json({ success: true, data: product });
+      res.status(200).json({ success: true, data: product });
     } else {
       res.status(404).json({ error: "Product not found" });
     }
@@ -54,26 +59,55 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
+
   const { name, description, price, tags } = req.body;
   try {
-    const product = await prisma.product.update({
+    const updatedProduct = await prisma.product.findUnique({
       where: { id: Number(id) },
-      data: { name, description, price, tags },
     });
-    res.status(201).json({ success: true, data: product });
+    if (updatedProduct) {
+      const product = await prisma.product.update({
+        where: { id: Number(id) },
+        data: { name, description, price, tags },
+      });
+      res.status(200).json({ success: true, data: product });
+    } else {
+      res.status(404).json({ error: "Product not found" });
+    }
   } catch (error) {
     res.status(500).json({ error: "Failed to update product" });
   }
 };
 
-export const deleteProduct = async (req: Request, res: Response) => {
+export const deleteProduct = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { id } = req.params;
+
   try {
-    const deletedproduct = await prisma.product.delete({
+    // Check if the user is authorized to delete the product
+    if (req.user.role !== "ADMIN") {
+      return next(
+        new ErrorResponse("Not authorized to delete this product", 403)
+      );
+    }
+
+    const product = await prisma.product.findUnique({
       where: { id: Number(id) },
     });
-    res.status(201).json({ success: true, data: deletedproduct });
+
+    if (!product) {
+      return next(new ErrorResponse("Product not found", 404));
+    }
+
+    await prisma.product.delete({
+      where: { id: Number(id) },
+    });
+
+    res.status(204).end(); // 204 No Content, no response body
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete product" });
+    next(new ErrorResponse("Failed to delete product", 500));
   }
 };

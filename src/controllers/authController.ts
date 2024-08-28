@@ -48,7 +48,7 @@ export const signup = async (
 
     // Generate JWT token
     const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "50h",
     });
 
     console.log("Signup request received:", req.body);

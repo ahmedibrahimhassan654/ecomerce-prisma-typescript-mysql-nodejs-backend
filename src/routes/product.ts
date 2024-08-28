@@ -7,17 +7,15 @@ import {
   updateProduct,
 } from "../controllers/productController";
 
-import { loginSchema, signupSchema } from "../utils/validationSchemas";
-import { validateSignup, validateLogin } from "../middelwares/validateRequest";
-import { authenticate } from "../middelwares/auth";
-import { authorize } from "../middelwares/roleMiddleware";
+
+import { authenticate, authorize } from "../middelwares/auth";
 const productsRoute = Router();
 
 // productsRote.get("/login", login);
-productsRoute.post("/", authenticate, authorize(["ADMIN"]), createProduct);
+productsRoute.post("/", authenticate,authorize(["ADMIN"]), createProduct);
 productsRoute.get("/", authenticate, getProducts);
 productsRoute.get("/:id", authenticate, getProductById);
 
-productsRoute.put("/:id", authenticate, authorize(["ADMIN"]), updateProduct);
-productsRoute.delete("/:id", authenticate, authorize(["ADMIN"]), deleteProduct);
+productsRoute.put("/:id", authenticate,authorize(["ADMIN"]), updateProduct);
+productsRoute.delete("/:id", authenticate,authorize(["ADMIN"]), deleteProduct);
 export default productsRoute;
