@@ -42,11 +42,9 @@ Create a .env file in the root directory and add your configuration settings.
 Run Migrations
 Apply database migrations to set up the schema.
 
-
 npx prisma migrate dev
 Start the Server
 Launch the backend server.
-
 
 npm start
 Run Tests
@@ -55,3 +53,4 @@ Execute tests to verify code functionality and integrity.
 npm test
 API Documentation
 For detailed API documentation and usage instructions, refer to the API Documentation section.
+https://lunar-astronaut-197297.postman.co/workspace/beirut-mart-team-~47fb28d3-96e6-4add-b5a3-0805e0116068/collection/7173620-a7f6f091-e428-445d-8602-39fe997d9976?action=share&creator=7173620
