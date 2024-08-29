@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=test jest --verbose",
+    "test": "cross-env NODE_ENV=test jest --runInBand",
     "prisma:generate": "dotenv -e .env.development -- npx prisma generate",
     "prisma:migrate:dev": "dotenv -e .env.development -- npx prisma migrate dev --name init",
     "prisma:migrate:test": "dotenv -e .env.test -- npx prisma migrate dev --name init",
@@ -35,7 +35,7 @@
     "jest": "^29.7.0",
     "lint-staged": "^15.2.9",
     "nodemon": "^3.1.4",
-    "prisma": "^5.18.0",
+    "prisma": "^5.19.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
@@ -43,7 +43,7 @@
     "zod": "^3.23.8"
   },
   "dependencies": {
-    "@prisma/client": "^5.18.0",
+    "@prisma/client": "^5.19.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "install": "^0.13.0",
