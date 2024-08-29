@@ -25,24 +25,27 @@ model User {
   password  String
   role      Role      @default(USER)
   addresses Address[] // Define one-to-many relationship with Address
-  carts     Cart[]    // Relationship to Cart model
+  carts     Cart[] // Relationship to Cart model
+  orders    Order[] // Add this line to establish the relation
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
   description String?
   price       Float
   tags        String
-  cartItems   CartItem[]  // Relationship to CartItem model
+  cartItems   CartItem[] // Relationship to CartItem model
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  OrderItem OrderItem[]
 }
 
 model Address {
@@ -57,6 +60,7 @@ model Address {
 
   @@map("addresses") // Optional: Map the model to a custom table name
 }
+
 model Cart {
   id        Int        @id @default(autoincrement())
   userId    Int
@@ -73,6 +77,27 @@ model CartItem {
   productId Int
   product   Product  @relation(fields: [productId], references: [id])
   quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  status    String      @default("not accepted") // possible values: "not accepted", "accepted", "in shipping"
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

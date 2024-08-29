@@ -49,27 +49,44 @@ export const authorize = (allowedRoles: string[]) => {
     }
   };
 };
-export const authenticate = (
+export const authenticate = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return next(new ErrorResponse("No token provided", 401));
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
   }
 
+  const token = authHeader.split(" ")[1];
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      userId: number;
-      role: string;
-    };
-    req.user = decoded;
-    console.log("Decoded user:from authonticate ", req.user);
+    const decodedToken = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as { userId: number };
+
+    // Fetch user details from the database, including the role
+    const user = await prisma.user.findUnique({
+      where: { id: decodedToken.userId },
+      select: { id: true, role: true }, // Select only the id and role
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Add userId and role to the request object
+    req.user = { userId: user.id, role: user.role };
 
     next();
   } catch (error) {
-    return next(new ErrorResponse("Invalid token", 401));
+    console.error("Authentication error:", error);
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };

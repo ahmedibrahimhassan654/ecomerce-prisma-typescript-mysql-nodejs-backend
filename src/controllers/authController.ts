@@ -8,7 +8,10 @@ import logger from "../utils/logger";
 import prisma from "../utils/prismaClient";
 
 interface AuthenticatedRequest extends Request {
-  user?: any;
+  user?: {
+    userId: number;
+    role: string;
+  };
 }
 
 export const signup = async (
@@ -112,8 +115,11 @@ export const me = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
     const existingUser = await prisma.user.findFirst({
-      where: { id: req.user.id },
+      where: { id: req.user.userId },
     });
 
     res.json({
