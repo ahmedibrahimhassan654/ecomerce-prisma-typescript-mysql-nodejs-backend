@@ -25,6 +25,8 @@ model User {
   password  String
   role      Role      @default(USER)
   addresses Address[] // Define one-to-many relationship with Address
+  carts     Cart[]    // Relationship to Cart model
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -37,6 +39,8 @@ model Product {
   description String?
   price       Float
   tags        String
+  cartItems   CartItem[]  // Relationship to CartItem model
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -52,4 +56,23 @@ model Address {
   user    User    @relation(fields: [userId], references: [id])
 
   @@map("addresses") // Optional: Map the model to a custom table name
+}
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
